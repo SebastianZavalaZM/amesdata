@@ -7,7 +7,7 @@ import joblib
 model = joblib.load('models/model.pkl')
 preprocessor = joblib.load('models/preprocessor.pkl')
 
-# Columnas esperadas
+# Columnas que espera el preprocesador
 expected_columns = {
     'totrms_abvgrd', 'lot_config', 'bsmtfin_sf_2', 'quality_sf', 'open_porch_sf',
     'lot_shape', 'overall_qual', 'total_bsmt_sf', 'full_bath', 'exter_cond',
@@ -27,7 +27,6 @@ expected_columns = {
     'lot_area', 'yr_sold', 'street', 'ms_zoning'
 }
 
-# Campos categóricos (esto puede variar si cambias el dataset)
 categorical_columns = {
     'lot_config', 'lot_shape', 'exter_cond', 'house_style', 'bsmtfin_type_2', 'central_air',
     'bsmt_cond', 'garage_type', 'heating_qc', 'electrical', 'roof_style', 'paved_drive',
@@ -38,36 +37,54 @@ categorical_columns = {
     'ms_zoning', 'street'
 }
 
-# Interfaz de entrada
+# Interfaz
 st.title("🏡 Predicción del Precio de Viviendas")
 st.write("Ingrese los datos de una vivienda para predecir su precio")
 
-# Inputs reales
-lot_area = st.number_input("Lot Area", value=8000)
-year_sold = st.selectbox("Año de venta", [2006, 2007, 2008, 2009, 2010])
+# Inputs personalizados importantes
+lot_area = st.number_input("Área del lote (Lot Area)", value=8000)
+yr_sold = st.selectbox("Año de venta", [2006, 2007, 2008, 2009, 2010])
 street = st.selectbox("Tipo de calle", ['Pave', 'Grvl'])
-ms_zoning = st.selectbox("MS Zoning", ['RL', 'RM', 'FV', 'RH', 'C (all)'])
+ms_zoning = st.selectbox("Zonificación MS", ['RL', 'RM', 'FV', 'RH', 'C (all)'])
 
-# Crear DataFrame base
+# Inputs adicionales clave
+overall_qual = st.slider("Calidad general (1-10)", 1, 10, 5)
+gr_liv_area = st.number_input("Área habitable (GrLivArea)", value=1500)
+garage_cars = st.slider("Autos en cochera", 0, 4, 1)
+total_bsmt_sf = st.number_input("Área total del sótano", value=800)
+full_bath = st.slider("Baños completos", 0, 3, 1)
+year_built = st.number_input("Año de construcción", value=1990)
+kitchen_qual = st.selectbox("Calidad de cocina", ['Ex', 'Gd', 'TA', 'Fa', 'Po'])
+neighborhood = st.selectbox("Vecindario", ['NAmes', 'CollgCr', 'OldTown', 'Edwards', 'Somerst'])
+
+# DataFrame base
 input_df = pd.DataFrame({
     'lot_area': [lot_area],
-    'yr_sold': [year_sold],
+    'yr_sold': [yr_sold],
     'street': [street],
-    'ms_zoning': [ms_zoning]
+    'ms_zoning': [ms_zoning],
+    'overall_qual': [overall_qual],
+    'gr_liv_area': [gr_liv_area],
+    'garage_cars': [garage_cars],
+    'total_bsmt_sf': [total_bsmt_sf],
+    'full_bath': [full_bath],
+    'year_built': [year_built],
+    'kitchen_qual': [kitchen_qual],
+    'neighborhood': [neighborhood]
 })
 
-# Completar columnas faltantes
+# Rellenar columnas faltantes
 for col in expected_columns:
     if col not in input_df.columns:
         if col in categorical_columns:
             input_df[col] = 'Desconocido'
         else:
-            input_df[col] = np.nan  # Mejor que '0' para columnas que usan imputación
+            input_df[col] = np.nan
 
-# Reordenar
+# Ordenar columnas según preprocesador
 input_df = input_df[list(expected_columns)]
 
-# Transformar y predecir
+# Predecir
 input_processed = preprocessor.transform(input_df)
 prediction = model.predict(input_processed)[0]
 
